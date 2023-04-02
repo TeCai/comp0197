@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 
-def pad_and_resize_image(image, target_size=256):
+def pad_and_resize_image(image, target_size=256, type='image'):
     width, height = image.size
 
     # Calculate the new dimensions while preserving the aspect ratio
@@ -32,9 +32,14 @@ def pad_and_resize_image(image, target_size=256):
 
     padding = (left_padding, top_padding, right_padding, bottom_padding)
 
-    # Pad the image using the edge pixel value
-    padded_image = ImageOps.expand(resized_image, padding,
-                                   fill=resized_image.getpixel((new_width - 10, new_height - 10)))
+    if type == 'image':
+        # Pad the image using the edge pixel value
+        padded_image = ImageOps.expand(resized_image, padding,
+                                       fill=resized_image.getpixel((new_width - 6, new_height - 6)))
+    elif type == 'label':
+        # Pad the label using background pixel value (2)
+        padded_image = ImageOps.expand(resized_image, padding, fill=2)
+
     padded_array = np.array(padded_image)
 
     return padded_array, new_height, new_width
@@ -67,9 +72,8 @@ def process_images(input_folder, label_folder, valid_extensions=("jpg", "jpeg", 
                 input_img_rgb = input_img.convert("RGB")
                 input_padded_array, width, height = pad_and_resize_image(input_img_rgb)
 
-                # Convert the label image to grayscale mode
-                # label_img_gray = label_img.convert("L")
-                label_padded_array, _, _ = pad_and_resize_image(label_img)
+                # Resize and pad the label image with background pixel value (2)
+                label_padded_array, _, _ = pad_and_resize_image(label_img, type='label')
 
                 # Add the padded input and label arrays to their respective lists
                 image_array.append(input_padded_array)
@@ -77,7 +81,6 @@ def process_images(input_folder, label_folder, valid_extensions=("jpg", "jpeg", 
                 size.append([width, height])
 
     return image_array, label_array, size
-
 
 
 if __name__ == '__main__':
